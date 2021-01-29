@@ -1,0 +1,5 @@
+#!/usr/bin/expect
+spawn dpkg -i oracle-java8-installer_8u131-1~webupd8~2_all.deb
+expect -ex {Do you accept the Oracle Binary Code license terms? [yes/no]} { send "Yes\r" }
+expect eof
+interact
