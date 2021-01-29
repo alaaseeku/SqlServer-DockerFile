@@ -1,0 +1,90 @@
+---
+- hosts: all
+  tasks:
+  - name: update ubuntu
+    apt: name=update
+  - name: install GnuPG package
+    apt: name=gnupg state=present
+  - name: update keys 
+    vars:
+    DISTRO: bionic
+    command: apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 5AFA7A83
+    command: tee "/etc/apt/sources.list.d/kurento.list" >/dev/null <<EOF
+    command: deb [arch=amd64] http://ubuntu.openvidu.io/6.11.0 $DISTRO kms6 EOF
+    
+   - name: Install kurento
+     command: apt-get update && apt-get install --yes kurento-media-server
+   - name: Run kurento 
+       command: service kurento-media-server start
+   - name: Configure firewall
+        command: ufw allow to 0.0.0.0/0  port 8888
+        
+   - name: Install Maven for player
+     command: apt-get install -y  java-common && wget http://debian.opennms.org/dists/opennms-23/main/binary-all/oracle-java8-installer_8u131-1~webupd8~2_all.deb
+   - name: install java
+     command: dpkg -i oracle-java8-installer_8u131-1~webupd8~2_all.deb
+   - name : chnage directory
+     command: chdir=/root
+   - name : get MAVEN
+     command: wget http://www-eu.apache.org/dist/maven/maven-3/3.5.4/binaries/apache-maven-3.5.4-bin.tar.gz
+   - name : Extract files of Maven
+     command: tar xzf apache-maven-3.5.4-bin.tar.gz
+   - name : Create Symbol link 
+     command: ln -s /root/apache-maven-3.5.4 /usr/local/apache-maven
+   - name : copy script files
+     copy: src=/root/apache-maven.sh dest=/etc/profile.d/apache-maven.sh
+   - name: Source the files
+     command: source /etc/profile.d/apache-maven.sh
+   - name: Download kurento player
+     command: git clone https://github.com/alaaseeku/kurentoPlay.git 
+   - name : chnage directory
+     command: chdir=/root/kurentoPlay/
+   - name : Extract player
+     command: tar –xvf kurento_cert.tgz
+   - name : change Directory 
+     command: chdir=/root/kurentoPlay/kurento-tutorial-java/kurento-player/
+   - name :
+     command: /usr/local/apache-maven/bin/mvn -U clean spring-boot:run&
+   - name : Configure firewall
+     command: ufw allow to 0.0.0.0/0  port 8443 && ufw allow proto udp to 0.0.0.0/0  port 49152:65535 
+   
+   
+
+   - name : Prepare dependences for asterisk
+     command: apt-get install sqlite openssl git curl wget libnewt-dev libssl-dev libncurses5-dev subversion  libsqlite3-dev build-essential libjansson-dev libxml2-dev  uuid-dev
+   - name : get asterisk package 
+     copy: src=/root/asterisk.tgz dest=/root/asterisk.tgz
+   - name : change Directory 
+     command: chdir=/root/  
+   - name : Extract package 
+     command: tar -xvf asterisk.tar.gz
+   - name : change Directory 
+     command: chdir=/root/asterisk-13.27.0/
+   - name : install MP3
+     command: contrib/scripts/get_mp3_source.sh
+   - name : install packages
+     command: contrib/scripts/install_prereq install
+   - name : install asterisk
+     command: make install
+   - name : configure asterisk2
+     command: make basic-pbx  
+   - name : confgure asterisk
+     command: make config
+   - name : copy http.conf 
+     copy: src=/root/http.conf dest=/etc/asterisk/http.conf
+   - name : copy sip.conf 
+     copy: src=/root/sip.conf dest=/etc/asterisk/sip.conf
+   - name : copy extensions.conf 
+     copy: src=/root/extensions.conf  dest=/etc/asterisk/extensions.conf
+   - name : copy certificates 
+     copy: src=/root/netsync.com.crt   dest=/etc/ssl/certs/netsync.com.crt
+   - name : copy certificates2 
+     copy: src=/root/netsync.com.key   dest=/etc/ssl/private/netsync.com.key  
+   - name : enable Asterrisk service 
+     command: systemctl enable asterisk
+   - name : start Asterrisk service
+     command: systemctl start asterisk
+   - name : Configure Firewall
+     command: ufw allow 5060 && ufw allow 8089
+
+    
